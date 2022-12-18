@@ -33,11 +33,13 @@ architecture rtl of simple_cpu is
 		);
 	end component;
 	
-	type state_type is (T0, T1, T2);
+	type state_type is (T0, T1, T2, T3);
 	signal current_state, next_state : state_type;
 	
 	signal opcode : std_logic_vector(3 downto 0);
-	signal A, G : unsigned(7 downto 0);
+	signal sub_mode : std_logic;
+	signal operand1, operand2 : unsigned(7 downto 0);
+	signal A : unsigned(7 downto 0);
 	
 	signal data_bus : unsigned(7 downto 0);
 	
@@ -46,28 +48,28 @@ architecture rtl of simple_cpu is
 	
 begin
 	
-	alu8_s0: alu8 port map(
+	alu8_0: alu8 port map(
 		opcode => opcode,
-		a => (others => '0'),
-		b => (others => '0'),
-		cin => '0',
+		a => operand1,
+		b => operand2,
+		cin => sub_mode,
 		cout => open,
-		r => open
+		r => A
 	);
 	
-	hex8_s2: hex8 port map(
+	hex8_bus: hex8 port map(
 		bin => std_logic_vector(data_bus),
 		hex1 => bus_hex1,
 		hex0 => bus_hex0
 	);
 	
-	hex8_s1: hex8 port map(
+	hex8_rs: hex8 port map(
 		bin => std_logic_vector(registers(to_integer(unsigned(rs_sel)))),
 		hex1 => rs_hex1,
 		hex0 => rs_hex0
 	);
 	
-	hex8_s0: hex8 port map(
+	hex8_rt: hex8 port map(
 		bin => std_logic_vector(registers(to_integer(unsigned(rt_sel)))),
 		hex1 => rt_hex1,
 		hex0 => rt_hex0
@@ -80,23 +82,28 @@ begin
 				next_state <= T1;
 				
 				opcode <= "0000";
-				
+				sub_mode <= '0';
 				
 				case I is
 					when "0000" => -- load
-						
+						registers(to_integer(unsigned(rs))) <= data;
+						-- done
 					when "0001" => -- move
-						
+						registers(to_integer(unsigned(rs))) <= registers(to_integer(unsigned(rt)));
+						-- done
 					when "0010" => -- and
-						opcode <= 
+						opcode <= "0000";
 					when "0011" => -- add
-						
+						opcode <= "0010";
 					when "0100" => -- sub, (A-B)
-						
+						opcode <= "0110";
+						sub_mode <= '1';
 					when "0101" => -- sub, (B-A)
-						
+						opcode <= "1010";
+						sub_mode <= '1';
 					when others => -- slt
-						
+						opcode <= "0111";
+						sub_mode <= '1';
 				end case;
 				
 			when T1 =>
@@ -104,13 +111,13 @@ begin
 				
 				case I is
 					when "0000" => -- load
-						
+						-- done
 					when "0001" => -- move
-						
+						-- done
 					when "0010" => -- and
-						
+						registers(to_integer(unsigned(rs))) <= A;
 					when "0011" => -- add
-						
+						registers(to_integer(unsigned(rs))) <= A;
 					when "0100" => -- sub, (A-B)
 						
 					when "0101" => -- sub, (B-A)
@@ -120,13 +127,33 @@ begin
 				end case;
 				
 			when T2 =>
+				next_state <= T3;
+				
+				case I is
+					when "0000" => -- load
+						-- done
+					when "0001" => -- move
+						-- done
+					when "0010" => -- and
+						
+					when "0011" => -- add
+						
+					when "0100" => -- sub, (A-B)
+						
+					when "0101" => -- sub, (B-A)
+						
+					when others => -- slt
+						
+				end case;
+				
+			when T3 =>
 				next_state <= T0;
 				
 				case I is
 					when "0000" => -- load
-						
+						-- done
 					when "0001" => -- move
-						
+						-- done
 					when "0010" => -- and
 						
 					when "0011" => -- add
